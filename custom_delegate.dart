@@ -113,16 +113,50 @@ class _AppDelegate extends LocalizationsDelegate<MyLocalizationDelagate> {
 // Create a Function to catch the key and return the value
 
 // Before : MyLocalizationDelagate.of(context: context,)!.getLocaliedText(key: key)
-// After  : localizaedText(key: key)
+// After  : context.localizaedText(key: key)
 
-String localizaedText({required String key}) {
+/// Build a function to load the localized texts directilly
+///
+/// This approch has some issues
+/// This is a standalone function that retrieves the localized text by
+/// accessing the BuildContext from a global navigatorkey.
+/// But it assumes that navigatorkey.currentContext is always valid and non-null.
+/// Less flexible because it depends on a global key
+/// and might throw an error if the context is not available.
+/// Also the provider was unable to update the state from the first click on the button  [Impotant]
+/// It needs to click more than one click to provide the context to load the json        [Impotant]
+
+String localizedText({required String key}) {
   final BuildContext context = navigatorkey.currentContext as BuildContext;
 
-  MyLocalizationDelagate localization = MyLocalizationDelagate.of(
+  final CustomLocalizationDelegate delegate = CustomLocalizationDelegate.of(
     context: context,
   )!;
 
-  String targetVal = localization.getLocaliedText(key: key);
+  final String targetText = delegate.getLocalizedText(key: key);
 
-  return targetVal;
+  return targetText;
 }
+
+/// With this approch I solved this error
+/// This is an extension method on BuildContext,
+/// meaning it can be called directly on any BuildContext object
+/// It uses the BuildContext provided by the caller (via this current class instance (BuildContext)),
+/// making it more reliable and context-aware.
+/// Also the BuildContext is always avilable due to it catch         [Impotant]
+/// the context from the build method of the widget tree brantch     [Impotant]
+/// More flexible and safer because it doesn't rely on a global key
+/// and works with the context provided by the widget.
+
+extension LoadTextFromJson on BuildContext {
+  String localizedText({required String key}) {
+    final CustomLocalizationDelegate delegate = CustomLocalizationDelegate.of(
+      context: this,
+    )!;
+
+    final String targetText = delegate.getLocalizedText(key: key);
+
+    return targetText;
+  }
+}
+
